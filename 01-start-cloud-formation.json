@@ -1,0 +1,95 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "01 Start Cloud Formation",
+
+  "Parameters" : {
+  },
+
+  "Mappings" : {
+  },
+
+  "Conditions" : {
+  },
+
+  "Resources" : {
+    "VPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock" : "10.0.0.0/16",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true",
+        "InstanceTenancy": "default",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    },
+
+    "SubnetPublicAZa" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.0.10.0/24",
+        "AvailabilityZone": "ap-northeast-1a",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    },
+
+    "SubnetPublicAZc" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.0.11.0/24",
+        "AvailabilityZone": "ap-northeast-1c",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    },
+
+    "SubnetPrivateAZa" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.0.20.0/24",
+        "AvailabilityZone": "ap-northeast-1a",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    },
+
+    "SubnetPrivateAZc" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VPC" },
+        "CidrBlock" : "10.0.21.0/24",
+        "AvailabilityZone": "ap-northeast-1c",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    }
+
+  },
+
+  "Outputs" : {
+  }
+}
