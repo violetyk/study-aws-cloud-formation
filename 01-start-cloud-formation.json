@@ -3,6 +3,33 @@
   "Description" : "01 Start Cloud Formation",
 
   "Parameters" : {
+
+    "InstanceType" : {
+      "Description" : "WebServer EC2 instance type",
+      "Type" : "String",
+      "Default" : "t2.micro",
+      "AllowedValues" : [ "t2.micro","t2.small","t2.medium","m3.medium","m3.large","m3.xlarge","m3.2xlarge","c4.large","c4.xlarge","c4.2xlarge","c4.4xlarge","c4.8xlarge","c3.large","c3.xlarge","c3.2xlarge","c3.4xlarge","c3.8xlarge","r3.large","r3.xlarge","r3.2xlarge","r3.4xlarge","r3.8xlarge","i2.xlarge","i2.2xlarge","i2.4xlarge","i2.8xlarge","d2.xlarge","d2.2xlarge","d2.4xlarge","d2.8xlarge","g2.2xlarge","g2.8xlarge" ],
+      "ConstraintDescription" : "must be a valid EC2 instance type."
+    },
+
+    "KeyName": {
+      "Description" : "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "255",
+      "AllowedPattern" : "[\\x20-\\x7E]*",
+      "ConstraintDescription" : "can contain only ASCII characters."
+    },
+
+    "SSHLocation" : {
+      "Description" : " The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    }
   },
 
   "Mappings" : {
@@ -83,6 +110,185 @@
           {
             "Key": "Application",
             "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    },
+
+    "InternetGateway" : {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    },
+
+    "InternetGatewayAttach" : {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": { "Ref" : "VPC" },
+        "InternetGatewayId": { "Ref" : "InternetGateway" }
+      }
+    },
+
+    "RouteTable" : {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId": { "Ref" : "VPC" },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": { "Ref" : "AWS::StackId" }
+          }
+        ]
+      }
+    },
+
+    "Route" : {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "InternetGatewayAttach",
+      "Properties": {
+        "RouteTableId": { "Ref" : "RouteTable" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": { "Ref" : "InternetGateway" }
+      }
+    },
+
+    "SubnetRouteTableAssociationPublicAZa" : {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref" : "SubnetPublicAZa" },
+        "RouteTableId": { "Ref" : "RouteTable" }
+      }
+    },
+
+    "SubnetRouteTableAssociationPublicAZc" : {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref" : "SubnetPublicAZc" },
+        "RouteTableId": { "Ref" : "RouteTable" }
+      }
+    },
+
+    "SubnetRouteTableAssociationPrivateAZa" : {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref" : "SubnetPublicAZa" },
+        "RouteTableId": { "Ref" : "RouteTable" }
+      }
+    },
+
+    "SubnetRouteTableAssociationPrivateAZc" : {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref" : "SubnetPublicAZc" },
+        "RouteTableId": { "Ref" : "RouteTable" }
+      }
+    },
+
+    "NetworkAcl" : {
+      "Type": "AWS::EC2::NetworkAcl",
+      "Properties": {
+        "VpcId": {"Ref" : "VPC"},
+        "Tags": [ {"Key" : "Application", "Value" : { "Ref" : "AWS::StackId"} } ]
+      }
+    },
+
+    "SecurityGroupWeb" : {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": { "Ref" : "VPC" },
+        "GroupDescription": "Web Server security group",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol" : "tcp",
+            "FromPort" : "22",
+            "ToPort" : "22",
+            "CidrIp" : { "Ref" : "SSHLocation"}
+          },
+          {
+            "IpProtocol" : "tcp",
+            "FromPort" : "80",
+            "ToPort" : "80",
+            "CidrIp" : "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+
+    "SecurityGroupDb" : {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": { "Ref" : "VPC" },
+        "GroupDescription": "Database Server security group",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol" : "tcp",
+            "FromPort" : "3306",
+            "ToPort" : "3306",
+            "SourceSecurityGroupId" : { "Ref" : "SecurityGroupWeb"}
+          }
+        ]
+      }
+    },
+
+    "InstanceWebServerAZa": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-cbf90ecb",
+        "InstanceType": { "Ref" : "InstanceType" },
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": true,
+            "DeviceIndex": 0,
+            "GroupSet": [
+              { "Ref" : "SecurityGroupWeb" }
+            ],
+            "SubnetId": {
+              "Ref": "SubnetPublicAZa"
+            }
+          }
+        ],
+        "Monitoring": false,
+        "KeyName": { "Ref" : "KeyName" },
+        "UserData": "",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "app-web"
+          }
+        ]
+      }
+    },
+
+    "InstanceWebServerAZc": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": "ami-cbf90ecb",
+        "InstanceType": { "Ref" : "InstanceType" },
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": true,
+            "DeviceIndex": 0,
+            "GroupSet": [
+              { "Ref" : "SecurityGroupWeb" }
+            ],
+            "SubnetId": {
+              "Ref": "SubnetPublicAZc"
+            }
+          }
+        ],
+        "Monitoring": false,
+        "KeyName": { "Ref" : "KeyName" },
+        "UserData": "",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "app-web"
           }
         ]
       }

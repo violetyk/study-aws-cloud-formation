@@ -1,6 +1,21 @@
 # study-aws-cloud-formation
 
 - 01-study-aws-cloud-formation.json
-  - VPC
-    - SubnetAZa
-    - SubnetAZc
+  - VPC 10.0.0.0/16
+    - InternetGateway(+VPCGatewayAttachment => VPC)
+    - RouteTable(+Route => InternetGateway)
+      - NetworkAcl
+      - AZ(ap-northeast-1a)
+        - Subnet(+SubnetRouteTableAssociation => RouteTable) #public, 10.0.10.0/24
+          - SecurityGroup #web
+            - Instance (AmazonLinux)
+        - Subnet(+SubnetRouteTableAssociation => RouteTable) #private, 10.0.20.0/24
+          - SecurityGroup #db
+            - DBInstance
+      - AZ(ap-northeast-1c)
+        - Subnet(+SubnetRouteTableAssociation => RouteTable) #publica, 10.0.11.0/24
+          - SecurityGroup #web
+            - Instance (AmazonLinux)
+        - Subnet(+SubnetRouteTableAssociation => RouteTable) #private, 10.0.21.0/24
+          - SecurityGroup #db
+            - DBInstance
