@@ -19,3 +19,7 @@
         - Subnet(+SubnetRouteTableAssociation => RouteTable) #private, 10.0.21.0/24
           - SecurityGroup #db
             - DBInstance
+      - DBSubnetGroup
+        - 10.0.20.0/24
+        - 10.0.21.0/24
+      - DBParameterGroup
